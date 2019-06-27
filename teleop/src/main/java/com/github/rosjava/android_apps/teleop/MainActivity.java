@@ -88,9 +88,8 @@ public class MainActivity extends RosAppActivity {
 		layoutJoystick.setOnTouchListener(new View.OnTouchListener() {
 				public boolean onTouch(View arg0, MotionEvent arg1) {
 					js.drawStick(arg1);
-					if(arg1.getAction() == MotionEvent.ACTION_DOWN || arg1.getAction() == MotionEvent.ACTION_MOVE) {
-
-						if(switchButton.isChecked()){
+					if(switchButton.isChecked()){
+						if(arg1.getAction() == MotionEvent.ACTION_DOWN || arg1.getAction() == MotionEvent.ACTION_MOVE) {
 							x = js.getX()/2;
 							if(x>0){
 								x = x+128;
@@ -119,7 +118,9 @@ public class MainActivity extends RosAppActivity {
                             talker.sendMessage(x, y);
 
 							textView2.setText("X : " + x +"Y : " + y);
-                        }
+
+					} else if (arg1.getAction() == MotionEvent.ACTION_UP)
+						talker.sendMessage(5128, 4128);
 					}
 				return true;
 				}
