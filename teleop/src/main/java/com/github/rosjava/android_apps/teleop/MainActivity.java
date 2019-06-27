@@ -140,9 +140,9 @@ public class MainActivity extends RosAppActivity {
 		switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 				if(isChecked){
-					talker.sendMessage(2000,0);
+					talker.sendStart();
 				} else {
-					talker.sendMessage(1000,0);
+					talker.sendStop();
 				}
 			}
 		});

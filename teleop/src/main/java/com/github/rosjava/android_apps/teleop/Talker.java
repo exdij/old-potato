@@ -38,19 +38,20 @@ public class Talker extends AbstractNodeMain {
 
             @Override
             protected void loop() throws InterruptedException {
-                    if (start) {
+                    if (start && !init) {
                         std_msgs.Int16 testX = publisher.newMessage();
                         testX.setData(numX);
                         publisher.publish(testX);
-                        if (!init) {
-                            std_msgs.Int16 testY = publisher.newMessage();
-                            testY.setData(numY);
-                            publisher.publish(testY);
-                        } else
-                            init = FALSE;
-                        if(sendOnce)
-                            start = FALSE;
-                        sequenceNumber++;
+                        std_msgs.Int16 testY = publisher.newMessage();
+                        testY.setData(numY);
+                        publisher.publish(testY);
+                    } else if(init) {
+                        std_msgs.Int16 testX = publisher.newMessage();
+                        testX.setData(numX);
+                        publisher.publish(testX);
+                        init = FALSE;
+                        numX = 5128;
+                        numY = 4128;
                     }
                 Thread.sleep(100);
             }
@@ -60,17 +61,15 @@ public class Talker extends AbstractNodeMain {
         numX = (short) msgX;
         numY = (short) msgY;
 
-        if(msgX==2000){
-            start = TRUE;
-            init = TRUE;
-            sendOnce = TRUE;
-        } else if(msgX==1000){
-            start = FALSE;
-            init = TRUE;
-            sendOnce = TRUE;
-        } else
-            start = TRUE;
-            init = FALSE;
-            sendOnce = FALSE;
+    }
+    public void sendStart(){
+        numX = 2000;
+        start = TRUE;
+        init = TRUE;
+    }
+    public void sendStop(){
+        numX = 1000;
+        start = FALSE;
+        init  = TRUE;
     }
 }
