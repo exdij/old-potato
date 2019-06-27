@@ -116,7 +116,7 @@ public class MainActivity extends RosAppActivity {
 								}
 							}
 							y = 4000 + y;
-                            talker.sendMessage((short) x, (short) y);
+                            talker.sendMessage(x, y);
 
 							textView2.setText("X : " + x +"Y : " + y);
                         }
@@ -140,9 +140,9 @@ public class MainActivity extends RosAppActivity {
 		switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 				if(isChecked){
-					talker.sendMessage((short)2000,(short)30000);
+					talker.sendMessage(2000,0);
 				} else {
-					talker.sendMessage((short)1000,(short)30000);
+					talker.sendMessage(1000,0);
 				}
 			}
 		});

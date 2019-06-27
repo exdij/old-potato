@@ -4,7 +4,6 @@ import org.ros.concurrent.CancellableLoop;
 import org.ros.namespace.GraphName;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
-import org.ros.node.NodeMain;
 import org.ros.node.topic.Publisher;
 
 import std_msgs.Int16;
@@ -15,7 +14,9 @@ import static java.lang.Boolean.TRUE;
 public class Talker extends AbstractNodeMain {
     public volatile short numX;
     public volatile short numY;
-    public volatile boolean flaga;
+    public volatile boolean start;
+    public volatile boolean init;
+    public volatile boolean sendOnce;
 
     public GraphName getDefaultNodeName(){
         return GraphName.of("rosjava/talker");
@@ -32,23 +33,25 @@ public class Talker extends AbstractNodeMain {
                 sequenceNumber = 0;
                 numX = 0;
                 numY = 0;
-                flaga = FALSE;
+                start = FALSE;
             }
 
             @Override
             protected void loop() throws InterruptedException {
-                if(flaga) {
-                    std_msgs.Int16 testX = publisher.newMessage();
-                    testX.setData(numX);
-                    publisher.publish(testX);
-                    if(numY<25500){
-                        std_msgs.Int16 testY = publisher.newMessage();
-                        testY.setData(numY);
-                        publisher.publish(testY);
+                    if (start) {
+                        std_msgs.Int16 testX = publisher.newMessage();
+                        testX.setData(numX);
+                        publisher.publish(testX);
+                        if (!init) {
+                            std_msgs.Int16 testY = publisher.newMessage();
+                            testY.setData(numY);
+                            publisher.publish(testY);
+                        } else
+                            init = FALSE;
+                        if(sendOnce)
+                            start = FALSE;
+                        sequenceNumber++;
                     }
-                    sequenceNumber++;
-                    flaga = FALSE;
-                }
                 Thread.sleep(100);
             }
         });
@@ -57,8 +60,17 @@ public class Talker extends AbstractNodeMain {
         numX = (short) msgX;
         numY = (short) msgY;
 
-        if(numX==numY){
-
-        }
+        if(msgX==2000){
+            start = TRUE;
+            init = TRUE;
+            sendOnce = TRUE;
+        } else if(msgX==1000){
+            start = FALSE;
+            init = TRUE;
+            sendOnce = TRUE;
+        } else
+            start = TRUE;
+            init = FALSE;
+            sendOnce = FALSE;
     }
 }
