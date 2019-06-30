@@ -14,8 +14,9 @@
  * the License.
  */
 
-task wrapper(type: Wrapper) {
+wrapper {
     gradleVersion = '4.10.2'
+    distributionUrl = distributionUrl.replace("bin", "all")
 }
 
 buildscript {
@@ -58,4 +59,5 @@ subprojects {
             flavorDimensions 'default'
         }
     }
+
 }

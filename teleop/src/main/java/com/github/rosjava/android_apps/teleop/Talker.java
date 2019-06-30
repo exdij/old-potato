@@ -6,6 +6,8 @@ import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
 import org.ros.node.topic.Publisher;
 
+import javax.xml.parsers.FactoryConfigurationError;
+
 import std_msgs.Int16;
 
 import static java.lang.Boolean.FALSE;
@@ -17,6 +19,7 @@ public class Talker extends AbstractNodeMain {
     public volatile boolean start;
     public volatile boolean init;
     public volatile boolean sendOnce;
+    private  volatile boolean SendingStarted;
 
     public GraphName getDefaultNodeName(){
         return GraphName.of("rosjava/talker");
@@ -34,6 +37,7 @@ public class Talker extends AbstractNodeMain {
                 numX = 0;
                 numY = 0;
                 start = FALSE;
+                SendingStarted = FALSE;
             }
 
             @Override
@@ -58,6 +62,7 @@ public class Talker extends AbstractNodeMain {
         });
     }
     public void sendMessage(int msgX, int msgY){
+
         numX = (short) msgX;
         numY = (short) msgY;
 
@@ -66,10 +71,16 @@ public class Talker extends AbstractNodeMain {
         numX = 2000;
         start = TRUE;
         init = TRUE;
+        SendingStarted = TRUE;
     }
     public void sendStop(){
         numX = 1000;
         start = FALSE;
         init  = TRUE;
+        SendingStarted = FALSE;
+    }
+
+    public boolean CheckIFStarted(){
+        return SendingStarted;
     }
 }

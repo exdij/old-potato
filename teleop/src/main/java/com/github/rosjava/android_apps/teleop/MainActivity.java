@@ -88,39 +88,45 @@ public class MainActivity extends RosAppActivity {
 		layoutJoystick.setOnTouchListener(new View.OnTouchListener() {
 				public boolean onTouch(View arg0, MotionEvent arg1) {
 					js.drawStick(arg1);
-					if(switchButton.isChecked()){
-						if(arg1.getAction() == MotionEvent.ACTION_DOWN || arg1.getAction() == MotionEvent.ACTION_MOVE) {
-							x = js.getX()/2;
-							if(x>0){
-								x = x+128;
-								if(x>254)
-									x=254;
-							} else {
-								x = x*-1;
-								if(x>127){
-									x = 127;
-								}
+					if(talker.CheckIFStarted()) {
+						if (arg1.getAction() == MotionEvent.ACTION_DOWN || arg1.getAction() == MotionEvent.ACTION_MOVE) {
+							x = js.getX() / 2;
+							x = x + 128;
+							if (x > 255) {
+								x = 255;
+								//if(x>254)
+								//	x=254;
+							} else if (x < 0) {
+								x = 0;
+								//x = x*-1;
+								//if(x>127){
+								//	x = 127;
 							}
+
 							x = 5000 + x;
 
-							y = js.getY()/-2;
-							if(y>0){
-								y = y+128;
-								if(y>254)
-									y=254;
-							} else {
-								y = y*-1;
-								if(y>127){
-									y = 127;
-								}
+							y = js.getY() / -2;
+							y = y + 128;
+							if (y < 0) {
+								y = 0;
+								//if(y>254)
+								//	y=254;
+							} else if (y > 255) {
+								//y = y*-1;
+								//if(y>127){
+								y = 255;
 							}
+
 							y = 4000 + y;
-                            talker.sendMessage(x, y);
+							talker.sendMessage(x, y);
 
-							textView2.setText("X : " + x +"Y : " + y);
+							textView2.setText("X : " + x + "Y : " + y);
 
-					} else if (arg1.getAction() == MotionEvent.ACTION_UP)
-						talker.sendMessage(5128, 4128);
+						} else if (arg1.getAction() == MotionEvent.ACTION_UP) {
+							talker.sendMessage(5128, 4128);
+							textView2.setText("X : " + x + "Y : " + y);
+						}
+						
 					}
 				return true;
 				}
