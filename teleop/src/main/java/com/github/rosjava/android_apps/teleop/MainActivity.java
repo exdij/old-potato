@@ -17,7 +17,10 @@
 package com.github.rosjava.android_apps.teleop;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -25,9 +28,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
+import java.lang.*;
 
 import com.github.rosjava.android_remocons.common_tools.apps.RosAppActivity;
 
@@ -43,6 +48,9 @@ import org.ros.message.MessageListener;
 
 import java.io.IOException;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 
 public class MainActivity extends RosAppActivity {
 	private RosImageView<sensor_msgs.CompressedImage> cameraView;
@@ -53,9 +61,17 @@ public class MainActivity extends RosAppActivity {
 	private Talker talker;
 	private Listener listener;
 	private JoyStickClass js;
+
+	Bitmap bmpStop;
+	Bitmap bmpStart;
+	Bitmap bmpFall;
+	Bitmap bmpObstacle;
+
 	private int x;
 	private int y;
+    ImageView image;
 	TextView textView2;
+	private ResponseInterpreter listenerResopnse;
 
 	public MainActivity() {
 		// The RosActivity constructor configures the notification title and ticker messages.
@@ -75,8 +91,19 @@ public class MainActivity extends RosAppActivity {
 		textView2 = findViewById(R.id.textView2);
 		number = findViewById(R.id.editNumber);
         switchButton = findViewById(R.id.switch_start);
+		image =  (ImageView) findViewById(R.id.imageView);
 
 
+		bmpFall =  BitmapFactory.decodeResource(getApplicationContext().getResources(),
+				R.drawable.fall);
+		bmpObstacle = BitmapFactory.decodeResource(getApplicationContext().getResources(),
+				R.drawable.obstacle);
+
+		bmpStop =  BitmapFactory.decodeResource(getApplicationContext().getResources(),
+				R.drawable.warning);
+
+		bmpStart = BitmapFactory.decodeResource(getApplicationContext().getResources(),
+				R.drawable.greenlight);
 		LinearLayout layoutJoystick = findViewById(R.id.layout_joystick);
         js = new JoyStickClass(getApplicationContext(), layoutJoystick, R.drawable.image_button);
         js.setStickSize(150, 150);
@@ -153,6 +180,50 @@ public class MainActivity extends RosAppActivity {
 				}
 			}
 		});
+		final Handler handler = new Handler();
+		final Runnable r = new Runnable() {
+			@Override
+			public void run() {
+				boolean obstacleDetected = listener.obstacleDetected;
+				listenerResopnse = listener.response;
+				if (listenerResopnse == null){
+					handler.postDelayed(this,500);
+					return;
+				}
+				Bitmap icon;
+				if(listenerResopnse.Started == TRUE && listenerResopnse.NeedToRefresh){
+					icon = bmpStart;
+				}else if(listenerResopnse.NoFloorDetected && listenerResopnse.NeedToRefresh){
+					icon = bmpFall;
+				}else if(listenerResopnse.ObstacleDetected && listenerResopnse.NeedToRefresh){
+					icon = bmpObstacle;
+				}else {
+					icon =bmpStop;
+					if(switchButton.isChecked()){
+						switchButton.setChecked(FALSE);
+					}
+				}
+				if(listenerResopnse.NeedToRefresh){
+					image.setImageBitmap(icon);
+					listenerResopnse.NeedToRefresh = FALSE;
+				}
+
+				handler.postDelayed(this,500);
+			}
+		};
+		Thread t = new Thread(){
+			@Override
+			public void run() {
+			try{
+				while (true){
+					 sleep(1000);
+					 handler.post(r);
+				}
+
+			}catch(InterruptedException e){e.printStackTrace();}
+			}
+		};
+		t.start();
 	}
 
 	@Override
