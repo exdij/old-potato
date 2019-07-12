@@ -21,10 +21,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.RequiresApi;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -36,6 +38,7 @@ import java.lang.*;
 
 import com.github.rosjava.android_remocons.common_tools.apps.RosAppActivity;
 
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.ros.android.BitmapFromCompressedImage;
 import org.ros.android.view.RosImageView;
 import org.ros.android.view.VirtualJoystickView;
@@ -45,6 +48,22 @@ import org.ros.node.NodeMainExecutor;
 import org.ros.node.topic.Publisher;
 import org.ros.node.topic.Subscriber;
 import org.ros.message.MessageListener;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.net.http.SslError;
+import android.os.Build;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.PermissionRequest;
+import android.webkit.SslErrorHandler;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import java.io.IOException;
 
@@ -53,7 +72,7 @@ import static java.lang.Boolean.TRUE;
 
 
 public class MainActivity extends RosAppActivity {
-	private RosImageView<sensor_msgs.CompressedImage> cameraView;
+	//private RosImageView<sensor_msgs.CompressedImage> cameraView;
 	private VirtualJoystickView virtualJoystickView;
 	private Button backButton;
 	private Switch switchButton;
@@ -61,6 +80,7 @@ public class MainActivity extends RosAppActivity {
 	private Talker talker;
 	private Listener listener;
 	private JoyStickClass js;
+	private Button btnOpen;
 
 	Bitmap bmpStop;
 	Bitmap bmpStart;
@@ -72,7 +92,9 @@ public class MainActivity extends RosAppActivity {
     ImageView image;
 	TextView textView2;
 	private ResponseInterpreter listenerResopnse;
-
+	private WebView mWebRTCWebView;
+	private String uri;
+	private boolean WebRTCStarted;
 	public MainActivity() {
 		// The RosActivity constructor configures the notification title and ticker messages.
 		super("android teleop", "android teleop");
@@ -83,16 +105,65 @@ public class MainActivity extends RosAppActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 
+
 		setDashboardResource(R.id.top_bar);
 		setMainWindowResource(R.layout.main);
 		super.onCreate(savedInstanceState);
+
+		WebRTCStarted = FALSE;
 		talker = new Talker();
 		listener = new Listener();
 		textView2 = findViewById(R.id.textView2);
-		number = findViewById(R.id.editNumber);
+		//number = findViewById(R.id.editNumber);
         switchButton = findViewById(R.id.switch_start);
 		image =  (ImageView) findViewById(R.id.imageView);
 
+		btnOpen = (Button) findViewById(R.id.button);
+		btnOpen.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if(WebRTCStarted == TRUE){
+					return;
+				}else{
+					WebRTCStarted = TRUE;
+				}
+				mWebRTCWebView.loadUrl(uri);
+
+
+				mWebRTCWebView.setWebChromeClient(new WebChromeClient() {
+					@Override
+					public void onPermissionRequest(final PermissionRequest request) {
+						//Log.d(TAG, "onPermissionRequest");
+						runOnUiThread(new Runnable() {
+
+							@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+							@Override
+							public void run() {
+								if(request.getOrigin().toString().equals(uri)) {
+									request.grant(request.getResources());
+								} else {
+									request.grant(request.getResources());
+								}
+							}
+						});
+					}
+
+				});
+			}
+		});
+
+		if (ContextCompat.checkSelfPermission(this,
+				Manifest.permission.CAMERA)
+				!= PackageManager.PERMISSION_GRANTED) {
+			// request runtime permissions
+			ActivityCompat.requestPermissions(this,
+					new String[]{Manifest.permission.CAMERA,Manifest.permission.CHANGE_NETWORK_STATE,Manifest.permission.MODIFY_AUDIO_SETTINGS,Manifest.permission.RECORD_AUDIO,Manifest.permission.BLUETOOTH,Manifest.permission.INTERNET,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.ACCESS_NETWORK_STATE},
+					100);
+		}
+
+		mWebRTCWebView = (WebView)  findViewById(R.id.webView1);
+
+		setUpWebViewDefaults(mWebRTCWebView);
 
 		bmpFall =  BitmapFactory.decodeResource(getApplicationContext().getResources(),
 				R.drawable.fall);
@@ -159,9 +230,9 @@ public class MainActivity extends RosAppActivity {
 				}
 		});
 
-        cameraView = (RosImageView<sensor_msgs.CompressedImage>) findViewById(R.id.image);
-        cameraView.setMessageType(sensor_msgs.CompressedImage._TYPE);
-        cameraView.setMessageToBitmapCallable(new BitmapFromCompressedImage());
+        //cameraView = (RosImageView<sensor_msgs.CompressedImage>) findViewById(R.id.image);
+        //cameraView.setMessageType(sensor_msgs.CompressedImage._TYPE);
+        //cameraView.setMessageToBitmapCallable(new BitmapFromCompressedImage());
         backButton = (Button) findViewById(R.id.back_button);
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -199,9 +270,6 @@ public class MainActivity extends RosAppActivity {
 					icon = bmpObstacle;
 				}else {
 					icon =bmpStop;
-					if(switchButton.isChecked()){
-						switchButton.setChecked(FALSE);
-					}
 				}
 				if(listenerResopnse.NeedToRefresh){
 					image.setImageBitmap(icon);
@@ -245,6 +313,11 @@ public class MainActivity extends RosAppActivity {
         String camTopic = remaps.get(getString(R.string.camera_topic));
 
         NameResolver appNameSpace = getMasterNameSpace();
+
+
+
+       uri =  "https://" + getMasterUri().getHost() + ":8090/stream/webrtc";
+
       /*  joyTopic = appNameSpace.resolve(joyTopic).toString();
         camTopic = appNameSpace.resolve(camTopic).toString();
 
@@ -278,4 +351,69 @@ public class MainActivity extends RosAppActivity {
 		  }
 		  return true;
 	  }
+
+	private void setUpWebViewDefaults(WebView webView) {
+		WebSettings settings = webView.getSettings();
+
+		// Enable Javascript
+		settings.setJavaScriptEnabled(true);
+
+		// Use WideViewport and Zoom out if there is no viewport defined
+		settings.setUseWideViewPort(true);
+		settings.setLoadWithOverviewMode(true);
+
+		// Enable pinch to zoom without the zoom buttons
+		settings.setBuiltInZoomControls(true);
+
+		// Allow use of Local Storage
+		settings.setDomStorageEnabled(true);
+
+		if(Build.VERSION.SDK_INT > Build.VERSION_CODES.HONEYCOMB) {
+			// Hide the zoom controls for HONEYCOMB+
+			settings.setDisplayZoomControls(false);
+		}
+
+		// Enable remote debugging via chrome://inspect
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+			WebView.setWebContentsDebuggingEnabled(true);
+		}
+
+		webView.setWebViewClient(new WebViewClient(){
+			@Override
+			public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+				handler.proceed(); // Ignore SSL certificate errors
+			}
+		});
+
+		// AppRTC requires third party cookies to work
+		CookieManager cookieManager = CookieManager.getInstance();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			cookieManager.setAcceptThirdPartyCookies(mWebRTCWebView, true);
+		}
+	}
 }
+
+/*
+mWebRTCWebView.loadUrl(uri);
+
+
+			mWebRTCWebView.setWebChromeClient(new WebChromeClient() {
+				@Override
+				public void onPermissionRequest(final PermissionRequest request) {
+					//Log.d(TAG, "onPermissionRequest");
+					runOnUiThread(new Runnable() {
+
+						@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+						@Override
+						public void run() {
+							if(request.getOrigin().toString().equals(uri)) {
+								request.grant(request.getResources());
+							} else {
+								request.grant(request.getResources());
+							}
+						}
+					});
+				}
+
+			});
+ */

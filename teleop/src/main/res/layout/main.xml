@@ -35,12 +35,19 @@
         android:layout_height="fill_parent"
         android:orientation="horizontal">
 
+     <WebView
+        android:id="@+id/webView1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight=".5"
+         /><!--
+
         <org.ros.android.view.RosImageView
             android:id="@+id/image"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:layout_weight=".5"
-            android:src="@mipmap/icon" />
+            android:src="@mipmap/icon" />-->
 
         <LinearLayout
             android:id="@+id/side_layout"
@@ -64,6 +71,16 @@
                 android:layout_height="0dip"
                 android:layout_weight="1" />
 
+
+            <Button
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_above="@+id/switch_start"
+        android:layout_alignParentStart="true"
+        android:text="Otworz"
+ /><!--
             <EditText
                 android:id="@+id/editNumber"
                 android:layout_width="match_parent"
@@ -72,7 +89,7 @@
                 android:layout_alignParentStart="true"
                 android:ems="10"
                 android:inputType="number|text"
-                android:text="0" />
+                android:text="0" />-->
 
             <Switch
                 android:id="@+id/switch_start"
